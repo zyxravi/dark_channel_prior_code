@@ -44,10 +44,10 @@ def dehaze(img, omega=0.95, percent=0.001, patch_size=15):
     return recovered_image
 
 
-for i in range(185):
-    image = cv2.imread('hazed_image.jpg')
+for i in range(100):
+    image = cv2.imread(f'hazy_image2/frame1_{i:04d}.jpg')
     defogged_image = dehaze(image)
-    output_image = "defogged_image_storing_location"
+    output_image = f"dehazed_image/{frame1_{i:04d}.jpg"
     cv2.imwrite(output_image, defogged_image)
-    break
+
 cv2.destroyAllWindows()
