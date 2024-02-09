@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
-
+from skimage.metrics import structural_similarity as ssim
+import openpyxl
 
 def dark_channel_prior(img, patch_size=15):
     b, g, r = cv2.split(img)
@@ -43,11 +44,46 @@ def dehaze(img, omega=0.95, percent=0.001, patch_size=15):
     recovered_image = recover_radiance(img, A, transmission, rho)
     return recovered_image
 
+def calculation(raw_image, defogged):
+    if raw_image.shape == defogged.shape:
+        gray1 = cv2.cvtColor(raw_image, cv2.COLOR_BGR2GRAY)
+        gray2 = cv2.cvtColor(defogged, cv2.COLOR_BGR2GRAY)
+        # MSE stands for mean square error
+        MSE = np.sum((raw_image.astype("float32") - defogged.astype("float32")) ** 2)
+        MSE /= float(raw_image.shape[0] * defogged.shape[1])
+        s = ssim(gray1, gray2)
+        PSNR = cv2.PSNR(raw_image, defogged)
+        return MSE, s, PSNR
+    else:
+        print("hazy and defogged image have the different dimensions")
+
+
+
+wb = openpyxl.Workbook()
+sheet = wb.active
+c1 = sheet.cell(row=1, column=1)
+c1.value = "Serial No."
+c2 = sheet.cell(row=1, column=2)
+c2.value = "MSE"
+c3 = sheet.cell(row=1, column=3)
+c3.value = "SSIM"
+
+c3 = sheet.cell(row=1, column=4)
+c3.value = "PSNR"
 
 for i in range(100):
     image = cv2.imread(f'hazy_image2/frame1_{i:04d}.jpg')
     defogged_image = dehaze(image)
     output_image = f"dehazed_image/{frame1_{i:04d}.jpg"
     cv2.imwrite(output_image, defogged_image)
-
+    MSE, SSIM, PSNR = calculation(image, defogged_image)
+    c1 = sheet.cell(row=i + 2, column=1)
+    c1.value = i + 1
+    c2 = sheet.cell(row=i + 2, column=2)
+    c2.value = MSE
+    c3 = sheet.cell(row=i + 2, column=3)
+    c3.value = SSIM
+    c4 = sheet.cell(row=i + 2, column=4)
+    c4.value = PSNR
+wb.save("calculation.xlsx")
 cv2.destroyAllWindows()
